@@ -1,2 +1,6 @@
-# Database_checker
-A simple desktop application built with Python's Tkinter and MySQL to check database connectivity and execute SQL queries effortlessly.
+# Database Checker with Tkinter and MySQL 🛠️
+
+## Description
+A lightweight desktop application developed using Python's Tkinter and MySQL to quickly verify database connectivity and execute SQL queries seamlessly. 
+
+
