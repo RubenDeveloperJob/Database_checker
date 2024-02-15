@@ -2,12 +2,12 @@
 
 # Press Mayús+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 from ttkthemes import ThemedStyle
 import mysql.connector
+import paramiko
 
 
 def check_database_connection(host, user, password, database):
@@ -24,26 +24,24 @@ def check_database_connection(host, user, password, database):
         messagebox.showerror("Error", f"No se pudo conectar a la base de datos.\nError: {e}")
 
 
-def execute_query(host, user, password, database, query):
+def check_ssh_connection(host, user, password):
     try:
-        conn = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database
-        )
-        cursor = conn.cursor()
-        cursor.execute(query)
-        result = cursor.fetchall()
-        conn.close()
-        return result
-    except mysql.connector.Error as e:
-        return f"Error al ejecutar la consulta: {e}"
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(hostname=host, username=user, password=password, timeout=5)
+        ssh.close()
+        messagebox.showinfo("Estado de la conexión SSH", "La conexión SSH está establecida.")
+    except paramiko.AuthenticationException:
+        messagebox.showerror("Error de autenticación", "Error: Fallo de autenticación. Comprueba las credenciales.")
+    except paramiko.SSHException as e:
+        messagebox.showerror("Error SSH", f"No se pudo establecer la conexión SSH.\nError: {e}")
+    except Exception as e:
+        messagebox.showerror("Error", f"Ocurrió un error al intentar conectar por SSH.\nError: {e}")
 
 
 def main():
     root = tk.Tk()
-    root.title("Comprobación de la base de datos")
+    root.title("Comprobación de la conexión")
 
     style = ThemedStyle(root)
     style.set_theme("arc")
@@ -84,7 +82,7 @@ def main():
     result_text = tk.Text(frame, height=10, width=50)
     result_text.grid(row=5, columnspan=2, padx=5, pady=5)
 
-    def check_connection():
+    def check_database():
         host = host_entry.get()
         user = user_entry.get()
         password = password_entry.get()
@@ -96,7 +94,18 @@ def main():
 
         check_database_connection(host, user, password, database)
 
-    def execute_query_and_show_result():
+    def check_ssh():
+        host = host_entry.get()
+        user = user_entry.get()
+        password = password_entry.get()
+
+        if not all((host, user, password)):
+            messagebox.showerror("Error", "Por favor, completa todos los campos.")
+            return
+
+        check_ssh_connection(host, user, password)
+
+    def execute_query():
         host = host_entry.get()
         user = user_entry.get()
         password = password_entry.get()
@@ -107,19 +116,16 @@ def main():
             messagebox.showerror("Error", "Por favor, completa todos los campos.")
             return
 
-        result = execute_query(host, user, password, database, query)
-        if isinstance(result, str):
-            messagebox.showerror("Error", result)
-        else:
-            result_text.delete(1.0, tk.END)
-            for row in result:
-                result_text.insert(tk.END, f"{row}\n")
+        # Aquí puedes ejecutar la consulta SQL o cualquier acción que desees realizar
 
-    check_button = ttk.Button(frame, text="Comprobar conexión", command=check_connection)
-    check_button.grid(row=6, columnspan=2, pady=10)
+    check_database_button = ttk.Button(frame, text="Comprobar conexión a la base de datos", command=check_database)
+    check_database_button.grid(row=6, columnspan=2, pady=5)
 
-    execute_button = ttk.Button(frame, text="Ejecutar consulta", command=execute_query_and_show_result)
-    execute_button.grid(row=7, columnspan=2, pady=10)
+    check_ssh_button = ttk.Button(frame, text="Comprobar conexión SSH", command=check_ssh)
+    check_ssh_button.grid(row=7, columnspan=2, pady=5)
+
+    execute_button = ttk.Button(frame, text="Ejecutar consulta SQL", command=execute_query)
+    execute_button.grid(row=8, columnspan=2, pady=5)
 
     root.mainloop()
 
